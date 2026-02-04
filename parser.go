@@ -1,66 +1,22 @@
 package main
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
+	"encoding/json"
 )
 
-var (
-	prefixes = map[[2]byte]string{
-		{'N', 'o'}: "Notification",
-		{'P', 'r'}: "PreToolUse",
-		{'P', 'o'}: "PostToolUse",
-		{'B', 'a'}: "Batch",
-		{'E', 'd'}: "Edit",
-		{'R', 'e'}: "Read",
-		{'W', 'r'}: "Write",
-		{'G', 'l'}: "Glob",
-		{'G', 'r'}: "Grep",
-		{'T', 'a'}: "Task",
-		{'W', 'e'}: "Web",
-	}
-)
+type Hook struct {
+	EventName string `json:"hook_event_name"`
 
-func parse(buf []byte) (bool, string, error) {
-	hook, err := extract(buf, []byte(`"hook_event_name":"`))
-	if err != nil {
-		return false, "", err
-	}
-
-	// Only the "idle_prompt" notification is supported. For hook type
-	// "Notification", we return "Idle" immediately without inspecting the
-	// payload.
-	if hook == "Notification" {
-		return false, "Idle", nil
-	}
-
-	word, err := extract(buf, []byte(`"tool_name":"`))
-	if err != nil {
-		return false, "", err
-	}
-
-	// "PostToolUse" runs immediately after a tool completes successfully.
-	// A hook value of "PostToolUse" indicates the tool has finished
-	// executing.
-	return hook == "PostToolUse", word, nil
+	// tool_name defaults to notification_type when missing.
+	ToolName string `json:"tool_name"`
 }
 
-func extract(buf, target []byte) (string, error) {
-	i := bytes.Index(buf, target)
-
-	// i + 2 = we are retrieving two bytes after "i".
-	if i < 0 || len(buf)-(i+2) < len(target) {
-		return "", errors.New("index out of bounds")
+func parse(buf []byte) (bool, string, error) {
+	var h Hook
+	if err := json.Unmarshal(buf, &h); err != nil {
+		return false, "", err
 	}
 
-	var k [2]byte
-	copy(k[:], buf[i+len(target):i+len(target)+2])
-
-	word, ok := prefixes[k]
-	if !ok {
-		return "", fmt.Errorf("word not found for prefix: %q", k)
-	}
-
-	return word, nil
+	// PostToolUse indicates the tool has finished executing.
+	return h.EventName == "PostToolUse", h.ToolName[:2], nil
 }

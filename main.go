@@ -59,7 +59,7 @@ func main() {
 					return
 				}
 
-				done, word, err := parse(buf[:n])
+				done, tool, err := parse(buf[:n])
 				if err != nil {
 					log.Print(err)
 					return
@@ -76,16 +76,16 @@ func main() {
 				//     "percentage": $percentage
 				//   }
 				if done {
-					fmt.Printf("{\"text\":%q,\"class\":\"done\"}\n", word[0])
+					fmt.Printf("{\"text\":%q,\"class\":\"done\"}\n", tool)
 				} else {
-					fmt.Printf("{\"text\":%q}\n", word[0])
+					fmt.Printf("{\"text\":%q}\n", tool)
 				}
 			}()
 		}
 	}()
 
 	log.Printf("listening to socket: %s", address)
-	fmt.Println("{\"text\":\"I\"}")
+	fmt.Println("{\"text\":\"Id\"}")
 	// Block until any signal is received.
 	log.Print(<-c)
 }
