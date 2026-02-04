@@ -76,16 +76,16 @@ func main() {
 				//     "percentage": $percentage
 				//   }
 				if done {
-					fmt.Printf("{\"text\":\"π %c\",\"class\":\"done\"}\n", word[0])
+					fmt.Printf("{\"text\":%q,\"class\":\"done\"}\n", word[0])
 				} else {
-					fmt.Printf("{\"text\":\"π %c\"}\n", word[0])
+					fmt.Printf("{\"text\":%q}\n", word[0])
 				}
 			}()
 		}
 	}()
 
 	log.Printf("listening to socket: %s", address)
-	fmt.Println("{\"text\":\"π I\"}")
+	fmt.Println("{\"text\":\"I\"}")
 	// Block until any signal is received.
 	log.Print(<-c)
 }
