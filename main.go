@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"errors"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 func main() {
 	log.SetPrefix("claudia: ")
+	parser := Parser{List: list.New().Init()}
 	// Set up channel on which to send signal notifications. We must use a
 	// buffered channel or risk missing the signal if we're not ready to
 	// receive when the signal is sent.
@@ -59,7 +61,7 @@ func main() {
 					return
 				}
 
-				session, done, tool, err := parse(buf[:n])
+				text, err := parser.Parse(buf[:n])
 				if err != nil {
 					log.Print(err)
 					return
@@ -75,17 +77,13 @@ func main() {
 				//     "tooltip": "$tooltip",
 				//     "percentage": $percentage
 				//   }
-				if done {
-					fmt.Printf("{\"text\":\"%s %s\",\"class\":\"done\"}\n", session, tool)
-				} else {
-					fmt.Printf("{\"text\":\"%s %s\"}\n", session, tool)
-				}
+				fmt.Printf("{\"text\":%q}\n", text)
 			}()
 		}
 	}()
 
 	log.Printf("listening to socket: %s", address)
-	fmt.Println("{\"text\":\"Idl\"}")
+	fmt.Println("{\"text\":\"\"}")
 	// Block until any signal is received.
 	log.Print(<-c)
 }
