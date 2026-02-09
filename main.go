@@ -3,6 +3,7 @@ package main
 import (
 	"container/list"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -13,15 +14,17 @@ import (
 
 func main() {
 	log.SetPrefix("claudia: ")
-	parser := Parser{List: list.New().Init()}
 	// Set up channel on which to send signal notifications. We must use a
 	// buffered channel or risk missing the signal if we're not ready to
 	// receive when the signal is sent.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
-	address := "/tmp/claudia.sock"
-	l, err := net.Listen("unix", address)
+	parser := Parser{List: list.New()}
+	socket := flag.String("name", "/tmp/claudia.sock", "socket's name")
+	flag.Parse()
+
+	l, err := net.Listen("unix", *socket)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,8 +85,8 @@ func main() {
 		}
 	}()
 
-	log.Printf("listening to socket: %s", address)
-	fmt.Println("{\"text\":\"\"}")
+	log.Printf("listening to socket: %s", *socket)
+	fmt.Println("{\"text\":\"-\"}")
 	// Block until any signal is received.
 	log.Print(<-c)
 }
