@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/list"
 	"errors"
 	"flag"
 	"fmt"
@@ -20,7 +19,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
-	parser := Parser{List: list.New()}
+	parser := Parser{List: make([]Element, 5)}
 	socket := flag.String("name", "/tmp/claudia.sock", "socket's name")
 	flag.Parse()
 
