@@ -19,7 +19,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
-	parser := Parser{List: make([]Element, 5)}
+	parser := Parser{list: make([]Element, 5)}
 	socket := flag.String("name", "/tmp/ai-radar.sock", "socket's name")
 	flag.Parse()
 
@@ -85,7 +85,7 @@ func main() {
 	}()
 
 	log.Printf("listening to socket: %s", *socket)
-	fmt.Println("{\"text\":\"-\"}")
+	fmt.Println("{\"text\":\"π\"}")
 	// Block until any signal is received.
 	log.Print(<-c)
 }

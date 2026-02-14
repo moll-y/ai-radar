@@ -2,21 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 )
 
 type (
 	Parser struct {
-		IIdx int
-		List []Element
+		ii   int
+		list []Element
 	}
 
 	Element struct {
-		ID     string `json:"session_id"`
-		Name   string `json:"hook_event_name"`
-		Tool   string `json:"tool_name"`
-		Status string
+		ID   string `json:"session_id"`
+		Name string `json:"hook_event_name"`
+		Tool string `json:"tool_name"`
 	}
 )
 
@@ -27,53 +25,84 @@ func (p *Parser) Parse(buf []byte) (string, error) {
 	}
 
 	switch e.Name {
-	case "PreToolUse":
-		e.Status = "-"
-	case "PostToolUseFailure":
-		e.Status = "!"
-	case "PostToolUse":
-		e.Status = "+"
+	case "SessionStart":
+		p.append(e)
+	case "SessionEnd":
+		p.remove(e)
+	default:
+		p.update(e)
 	}
 
-	p.save(e)
 	return p.write(), nil
 }
 
-// save stores an Element in the parser list.
-func (p *Parser) save(e Element) {
-	for i := 0; i < len(p.List); i++ {
-		// If an element with the same ID already exists in p.List, it
-		// is replaced in-place.
-		if p.List[i].ID == e.ID {
-			p.List[i] = e
-			return
-		}
+func (p *Parser) remove(e Element) {
+	i := p.find(e.ID)
+	if i == -1 {
+		return
+	}
+
+	// Shift everything left to fill the gap.
+	copy(p.list[i:], p.list[i+1:])
+
+	// Mark last slot as empty so the writer ignores it.
+	p.list[len(p.list)-1].ID = ""
+}
+
+func (p *Parser) append(e Element) {
+	if p.update(e) {
+		return
 	}
 
 	// If no matching ID is found, the element is written at the current
 	// insertion index. The index is then advanced using circular
 	// semantics, so new elements overwrite older ones once the list
 	// capacity is reached.
-	p.List[p.IIdx] = e
-	p.IIdx = (p.IIdx + 1) % len(p.List)
+	p.list[p.ii] = e
+	p.ii = (p.ii + 1) % len(p.list)
+}
+
+func (p *Parser) update(e Element) bool {
+	if i := p.find(e.ID); i != -1 {
+		p.list[i] = e
+		return true
+	}
+
+	return false
+}
+
+func (p *Parser) find(id string) int {
+	for i := 0; i < len(p.list); i++ {
+		if p.list[i].ID == id {
+			return i
+		}
+	}
+
+	return -1
 }
 
 func (p *Parser) write() string {
 	var b strings.Builder
-	b.Grow(len(p.List) * 22)
-	for i, e := range p.List {
+	b.Grow(len(p.list) * 22)
+	for _, e := range p.list {
 		if e.ID == "" {
 			continue
 		}
+
 		if b.Len() > 0 {
-			b.WriteString(" | ")
+			b.WriteRune(' ')
+			b.WriteRune('|')
+			b.WriteRune(' ')
 		}
-		b.WriteString(strconv.Itoa(i + 1))
-		b.WriteString(":")
+
 		b.WriteString(e.ID[:2])
-		b.WriteString(" = ")
-		b.WriteString(e.Status)
+		b.WriteRune(' ')
 		b.WriteString(e.Tool)
 	}
+
+	if b.Len() == 0 {
+		b.WriteString("π")
+	}
+
 	return b.String()
 }
