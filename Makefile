@@ -1,2 +1,2 @@
 build:
-	go build -o ~/.config/waybar/scripts/claudia .
+	go build -o ~/.config/waybar/scripts/ai-radar .

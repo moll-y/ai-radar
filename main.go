@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	log.SetPrefix("claudia: ")
+	log.SetPrefix("ai-radar: ")
 	// Set up channel on which to send signal notifications. We must use a
 	// buffered channel or risk missing the signal if we're not ready to
 	// receive when the signal is sent.
@@ -20,7 +20,7 @@ func main() {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
 	parser := Parser{List: make([]Element, 5)}
-	socket := flag.String("name", "/tmp/claudia.sock", "socket's name")
+	socket := flag.String("name", "/tmp/ai-radar.sock", "socket's name")
 	flag.Parse()
 
 	l, err := net.Listen("unix", *socket)
