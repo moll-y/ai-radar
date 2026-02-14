@@ -2,11 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 )
 
 type (
 	Parser struct {
+		IIdx int
 		List []Element
 	}
 
@@ -33,38 +35,45 @@ func (p *Parser) Parse(buf []byte) (string, error) {
 		e.Status = "+"
 	}
 
-	return p.concat(e), nil
+	p.save(e)
+	return p.write(), nil
 }
 
-func (p *Parser) concat(e Element) string {
-	i := 0
-	for j := 0; j < len(p.List); j++ {
-		if p.List[j].ID == e.ID {
-			i = j
-			break
+// save stores an Element in the parser list.
+func (p *Parser) save(e Element) {
+	for i := 0; i < len(p.List); i++ {
+		// If an element with the same ID already exists in p.List, it
+		// is replaced in-place.
+		if p.List[i].ID == e.ID {
+			p.List[i] = e
+			return
 		}
 	}
-	for i < len(p.List)-1 {
-		p.List[i] = p.List[i+1]
-		i++
-	}
-	p.List[len(p.List)-1] = e
-	return p.buildString()
+
+	// If no matching ID is found, the element is written at the current
+	// insertion index. The index is then advanced using circular
+	// semantics, so new elements overwrite older ones once the list
+	// capacity is reached.
+	p.List[p.IIdx] = e
+	p.IIdx = (p.IIdx + 1) % len(p.List)
 }
 
-func (p *Parser) buildString() string {
+func (p *Parser) write() string {
 	var b strings.Builder
-	b.WriteString(" ")
-	for _, e := range p.List {
+	b.Grow(len(p.List) * 22)
+	for i, e := range p.List {
 		if e.ID == "" {
 			continue
 		}
-		b.WriteString("[")
-		b.WriteString(e.ID[:3])
+		if b.Len() > 0 {
+			b.WriteString(" | ")
+		}
+		b.WriteString(strconv.Itoa(i + 1))
+		b.WriteString(":")
+		b.WriteString(e.ID[:2])
 		b.WriteString(" = ")
 		b.WriteString(e.Status)
 		b.WriteString(e.Tool)
-		b.WriteString("] ")
 	}
 	return b.String()
 }
